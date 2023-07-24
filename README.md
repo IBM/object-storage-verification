@@ -11,3 +11,7 @@ export SWIFT_PASSWORD=mypassword
 export SWIFT_PROJECT=myproject
 ./swiftcurl.sh
 ```
+
+## Copyright & License
+
+Copyright IBM Corporation 2023, released under the terms of the [Apache License 2.0](LICENSE).
