@@ -50,14 +50,21 @@ tmpfile() {
 }
 trap 'rm -f /tmp/${SCRIPTNAME}.*' EXIT
 
-runcmd() {
-  [ -z ${DEBUG+x} ] || echo -e "\n$*"
+runcurl() {
+  [ -z ${DEBUG+x} ] || echo -e "\ncurl $*"
 
-  local result_file=$(tmpfile)
-  if ! local http_code=$(eval "$* --output $result_file --write-out \"%{http_code}\"") ; then
+  local result_file http_code
+  result_file=$(tmpfile)
+  if ! http_code=$(eval "curl \
+    --silent \
+    --show-error \
+    --output $result_file \
+    --write-out \"%{http_code}\" \
+    $*")
+  then
     echoerr "ERROR!"
     echoerr "The following command failed:"
-    echoerr "  $*"
+    echoerr "  curl $*"
     echoerr
 
     exit 1
@@ -66,7 +73,7 @@ runcmd() {
   if [ "$http_code" -lt 200 ] || [ "$http_code" -gt 299 ] ; then
     echoerr "ERROR! ($http_code)"
     echoerr "The following command failed:"
-    echoerr "  $*"
+    echoerr "  curl $*"
     [ -z ${DEBUG+x} ] || echoerr -e "\n$(cat "$result_file")"
     echoerr
 
@@ -136,7 +143,7 @@ cat <<EOF > "$auth_json"
 }
 EOF
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"Content-Type: application/json\; charset=utf-8\" \
   --include \
   --data @"$auth_json" \
@@ -150,7 +157,7 @@ auth_token=$(echo "$RESULT" | awk '/X-Subject-Token:/{print $2}' | tr -d '\r')
 separator
 echo -n "Obtaining project ID... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/projects"
 
@@ -162,7 +169,7 @@ project_id=$(echo "$RESULT" | python3 -mjson.tool | grep -B 1 "\"name\": \"$SWIF
 separator
 echo -n "Getting project information... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/"
 
@@ -172,7 +179,7 @@ runcmd curl --silent --show-error \
 separator
 echo -n "Creating test container... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --header \"X-Storage-Policy: "$SWIFT_POLICY"\" \
   --request PUT \
@@ -187,7 +194,7 @@ echo -n "Uploading test object... "
 temp_data=$(tmpfile)
 dd if=/dev/urandom of="$temp_data" bs=1M count=10 &> /dev/null
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --request PUT \
   --data-binary @"$temp_data" \
@@ -199,7 +206,7 @@ runcmd curl --silent --show-error \
 separator
 echo -n "Getting information about container... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --head \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}"
@@ -210,7 +217,7 @@ runcmd curl --silent --show-error \
 separator
 echo -n "Getting information about object... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --head \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
@@ -221,7 +228,7 @@ runcmd curl --silent --show-error \
 separator
 echo -n "Downloading test object... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
 
@@ -231,7 +238,7 @@ runcmd curl --silent --show-error \
 separator
 echo -n "Revoking authentication token... "
 
-runcmd curl --silent --show-error \
+runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --header \"X-Subject-Token: "$auth_token"\" \
   --request DELETE \
