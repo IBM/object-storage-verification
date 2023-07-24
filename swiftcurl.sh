@@ -40,6 +40,11 @@ environment() {
   exit 1
 }
 
+separator() {
+  local columns=$(stty -a < /dev/pts/0 | grep -Po '(?<=columns )\d+')
+  printf "*%.0s" $(seq 1 $columns)
+}
+
 tmpfile() {
   mktemp "/tmp/${SCRIPTNAME}.XXXXXXXXXX"
 }
@@ -94,6 +99,7 @@ fi
 #
 # Obtain Authentication Token
 #
+separator
 echo -n "Obtaining authentication token... "
 
 auth_json=$(tmpfile)
@@ -130,6 +136,7 @@ auth_token=$(echo "$result" | awk '/X-Subject-Token:/{print $2}' | tr -d '\r')
 #
 # Obtain Project ID
 #
+separator
 echo -n "Obtaining project ID... "
 
 runcmd curl --silent --show-error \
@@ -141,6 +148,7 @@ project_id=$(echo "$result" | python3 -mjson.tool | grep -B 1 "\"name\": \"$SWIF
 #
 # Get Project Information
 #
+separator
 echo -n "Getting project information... "
 
 runcmd curl --silent --show-error \
@@ -150,6 +158,7 @@ runcmd curl --silent --show-error \
 #
 # Create Test Container
 #
+separator
 echo -n "Creating test container... "
 
 runcmd curl --silent --show-error \
@@ -161,6 +170,7 @@ runcmd curl --silent --show-error \
 #
 # Upload Test Object
 #
+separator
 echo -n "Uploading test object... "
 
 temp_data=$(tmpfile)
@@ -175,6 +185,7 @@ runcmd curl --silent --show-error \
 #
 # Get Information About Container
 #
+separator
 echo -n "Getting information about container... "
 
 runcmd curl --silent --show-error \
@@ -185,6 +196,7 @@ runcmd curl --silent --show-error \
 #
 # Get Information About Object
 #
+separator
 echo -n "Getting information about object... "
 
 runcmd curl --silent --show-error \
@@ -195,6 +207,7 @@ runcmd curl --silent --show-error \
 #
 # Download Test Object
 #
+separator
 echo -n "Downloading test object... "
 
 runcmd curl --silent --show-error \
@@ -204,6 +217,7 @@ runcmd curl --silent --show-error \
 #
 # Revoke Authentication Token
 #
+separator
 echo -n "Revoking authentication token... "
 
 runcmd curl --silent --show-error \
