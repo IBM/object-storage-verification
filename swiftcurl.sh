@@ -53,8 +53,8 @@ trap 'rm -f /tmp/${SCRIPTNAME}.*' EXIT
 runcmd() {
   [ -z ${DEBUG+x} ] || echo -e "\n$*"
 
-  result_file=$(tmpfile)
-  if ! http_code=$(eval "$* --output $result_file --write-out \"%{http_code}\"") ; then
+  local result_file=$(tmpfile)
+  if ! local http_code=$(eval "$* --output $result_file --write-out \"%{http_code}\"") ; then
     echoerr "ERROR!"
     echoerr "The following command failed:"
     echoerr "  $*"
@@ -76,7 +76,7 @@ runcmd() {
   echo "SUCCESS! ($http_code)"
   echo
 
-  result=$(tr -d '\0' < "$result_file")
+  RESULT=$(tr -d '\0' < "$result_file")
 }
 
 #
@@ -142,7 +142,7 @@ runcmd curl --silent --show-error \
   --data @"$auth_json" \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/auth/tokens"
 
-auth_token=$(echo "$result" | awk '/X-Subject-Token:/{print $2}' | tr -d '\r')
+auth_token=$(echo "$RESULT" | awk '/X-Subject-Token:/{print $2}' | tr -d '\r')
 
 #
 # Obtain Project ID
@@ -154,7 +154,7 @@ runcmd curl --silent --show-error \
   --header \"X-Auth-Token: "$auth_token"\" \
   "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/projects"
 
-project_id=$(echo "$result" | python3 -mjson.tool | grep -B 1 "\"name\": \"$SWIFT_PROJECT\"" | awk '/"id":/{print $2}' | tr -d '",')
+project_id=$(echo "$RESULT" | python3 -mjson.tool | grep -B 1 "\"name\": \"$SWIFT_PROJECT\"" | awk '/"id":/{print $2}' | tr -d '",')
 
 #
 # Get Project Information
