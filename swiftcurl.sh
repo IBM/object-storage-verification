@@ -97,6 +97,17 @@ if ! curl --version &> /dev/null ; then
 fi
 
 #
+# Print Connection Details
+#
+separator
+echo "SWIFT_IP: $SWIFT_IP"
+echo "SWIFT_USER: $SWIFT_USER"
+echo "SWIFT_PROJECT: $SWIFT_PROJECT"
+echo "SWIFT_CONTAINER: $SWIFT_CONTAINER"
+echo "SWIFT_POLICY: $SWIFT_POLICY"
+echo
+
+#
 # Obtain Authentication Token
 #
 separator
