@@ -19,6 +19,11 @@ SCRIPTNAME=$(basename "$0")
 #
 SWIFT_DOMAIN="default"
 SWIFT_PROTOCOL="http"
+SWIFT_AUTH_PORT="5000"
+SWIFT_STORAGE_PORT="8080"
+#SWIFT_PROTOCOL="https"
+#SWIFT_AUTH_PORT="5001"
+#SWIFT_STORAGE_PORT="8081"
 SWIFT_CONTAINER="swiftcurl_test"
 SWIFT_POLICY="${SWIFT_POLICY:-policy-0}"
 SWIFT_OBJECT="${HOSTNAME}_data_$(date +%F)"
@@ -59,6 +64,7 @@ runcurl() {
   if ! http_code=$(eval "curl \
     --silent \
     --show-error \
+    --insecure \
     --output $result_file \
     --write-out \"%{http_code}\" \
     $*")
@@ -109,6 +115,9 @@ fi
 #
 separator
 echo "SWIFT_IP: $SWIFT_IP"
+echo "SWIFT_PROTOCOL: $SWIFT_PROTOCOL"
+echo "SWIFT_AUTH_PORT: $SWIFT_AUTH_PORT"
+echo "SWIFT_STORAGE_PORT: $SWIFT_STORAGE_PORT"
 echo "SWIFT_USER: $SWIFT_USER"
 echo "SWIFT_PROJECT: $SWIFT_PROJECT"
 echo "SWIFT_CONTAINER: $SWIFT_CONTAINER"
@@ -148,7 +157,7 @@ runcurl \
   --header \"Content-Type: application/json\; charset=utf-8\" \
   --include \
   --data @"$auth_json" \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/auth/tokens"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_AUTH_PORT}/v3/auth/tokens"
 
 auth_token=$(echo "$RESULT" | awk '/X-Subject-Token:/{print $2}' | tr -d '\r')
 
@@ -160,7 +169,7 @@ echo -n "Obtaining project ID... "
 
 runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/projects"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_AUTH_PORT}/v3/projects"
 
 project_id=$(echo "$RESULT" | python3 -mjson.tool | grep -B 1 "\"name\": \"$SWIFT_PROJECT\"" | awk '/"id":/{print $2}' | tr -d '",')
 
@@ -172,7 +181,7 @@ echo -n "Getting project information... "
 
 runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/"
 
 #
 # Create Test Container
@@ -184,7 +193,7 @@ runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --header \"X-Storage-Policy: "$SWIFT_POLICY"\" \
   --request PUT \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/${SWIFT_CONTAINER}"
 
 #
 # Upload Test Object
@@ -199,7 +208,7 @@ runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --request PUT \
   --data-binary @"$temp_data" \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
 
 #
 # Get Information About Container
@@ -210,7 +219,7 @@ echo -n "Getting information about container... "
 runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --head \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/${SWIFT_CONTAINER}"
 
 #
 # Get Information About Object
@@ -221,7 +230,7 @@ echo -n "Getting information about object... "
 runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --head \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
 
 #
 # Download Test Object
@@ -231,7 +240,7 @@ echo -n "Downloading test object... "
 
 runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:8080/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_STORAGE_PORT}/v1/AUTH_${project_id}/${SWIFT_CONTAINER}/${SWIFT_OBJECT}"
 
 #
 # Revoke Authentication Token
@@ -243,7 +252,7 @@ runcurl \
   --header \"X-Auth-Token: "$auth_token"\" \
   --header \"X-Subject-Token: "$auth_token"\" \
   --request DELETE \
-  "${SWIFT_PROTOCOL}://${SWIFT_IP}:35357/v3/auth/tokens"
+  "${SWIFT_PROTOCOL}://${SWIFT_IP}:${SWIFT_AUTH_PORT}/v3/auth/tokens"
 
 echo "All tests successful! 🎉 Exiting..."
 
