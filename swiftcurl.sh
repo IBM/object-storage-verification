@@ -49,8 +49,8 @@ environment() {
 
 separator() {
   local columns
-  columns=$(stty -a < /dev/pts/0 | grep -Po '(?<=columns )\d+')
-  printf "*%.0s" $(seq 1 "$columns")
+  columns=$(stty -a | grep -Po '(?<=columns )\d+')
+  printf "*%.0s" $(seq 1 "${columns:-80}")
 }
 
 tmpfile() {
