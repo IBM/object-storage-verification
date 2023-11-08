@@ -30,6 +30,12 @@ Reference documentation:
 - [API Examples using Curl](https://docs.openstack.org/keystone/train/api_curl_examples.html)
 - [Object Storage API](https://docs.openstack.org/api-ref/object-store/index.html)
 
+## S3
+
+Reference documentation:
+
+- [Amazon S3 REST API with curl](https://czak.pl/2015/09/15/s3-rest-api-with-curl.html)
+
 ## Copyright & License
 
 Copyright IBM Corporation 2023, released under the terms of the [Apache License 2.0](LICENSE).
